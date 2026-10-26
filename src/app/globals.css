@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-canvas: #07080b;
+  --color-surface: #0c0e13;
+  --color-elevated: #11141b;
+  --color-raised: #161a22;
+  --color-line: #1e232c;
+  --color-line-strong: #2c323e;
+  --color-ink: #eceef3;
+  --color-muted: #9ba3b2;
+  --color-faint: #6b7382;
+  --color-accent: #7ee2bb;
+  --color-accent-strong: #37d39a;
+  --color-accent-ink: #04140d;
+  --color-danger: #fda4af;
+  --color-warning: #fcd34d;
+  --color-info: #93c5fd;
+
+  --font-sans:
+    "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    "Geist Mono", "SFMono-Regular", ui-monospace, "Cascadia Code", "Segoe UI Mono",
+    Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    background-image:
+      radial-gradient(60rem 24rem at 72% -12%, rgb(55 211 154 / 0.07), transparent 70%),
+      radial-gradient(48rem 22rem at 8% 0%, rgb(147 197 253 / 0.04), transparent 65%);
+    background-repeat: no-repeat;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgb(55 211 154 / 0.28);
+    color: #f4fff9;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-strong);
+    outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .panel {
+    border: 1px solid var(--color-line);
+    border-radius: 0.875rem;
+    background:
+      linear-gradient(to bottom, rgb(255 255 255 / 0.022), transparent 38%),
+      var(--color-surface);
+  }
+
+  .label-mono {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+
+  .diff-grid {
+    background-image: linear-gradient(
+      to right,
+      transparent 0,
+      transparent 3.25rem,
+      rgb(255 255 255 / 0.045) 3.25rem,
+      rgb(255 255 255 / 0.045) calc(3.25rem + 1px),
+      transparent calc(3.25rem + 1px)
+    );
+  }
+
+  .prose-report {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.7;
+    color: var(--color-muted);
+  }
 }
