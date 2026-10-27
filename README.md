@@ -1,405 +1,293 @@
-# ProofGate
+<div align="center">
 
-An open-source verification layer for AI-generated code changes. ProofGate takes a unified diff, produces deterministic **HEURISTIC** review signals, and — when you explicitly opt in — runs an allowlisted test/lint command against a trusted local checkout and records the real result as reproducible evidence.
+# 🛡️ ProofGate
 
-It never executes the code in a diff. Deterministic analysis stays in-process. The optional AI Fix Advisor sends only a single finding excerpt to Groq, and only after a per-finding consent prompt.
+### AI can write the code. ProofGate helps you verify the change.
 
-## What it does
+**Evidence-first review for AI-generated and human-written code.**  
+Inspect Git diffs, understand potential regressions, run approved checks locally, and bring reproducible evidence into your pull-request workflow.
 
-**Phase 1 · diff review (in the dashboard)**
+[**Try the live app**](https://proofgate-seven.vercel.app/) · [**Explore the code**](https://github.com/Kalpesh1Sharma/proofgate) · [**Report an issue**](https://github.com/Kalpesh1Sharma/proofgate/issues)
 
-- Accepts a standard two-way unified diff up to 200 KB.
-- Parses file paths, hunks, additions, deletions and both old/new line numbers.
-- Rejects malformed hunks, combined diffs, binary diffs and oversized input with a specific error.
-- Flags removed validation, removed authorization, removed or weakened money boundaries, removed rounding, and source changes without a matching test change.
-- Every finding is labelled `HEURISTIC` and carries a rule ID, severity, file, line, evidence, explanation and a suggested test.
-- Exports a Markdown report and a JSON report, both containing the parsed changes, the tool version and the limits of verification.
+![License: MIT](https://img.shields.io/badge/license-MIT-16a34a?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.5.0-64748b?style=flat-square)
+![Next.js](https://img.shields.io/badge/Next.js-16-111827?style=flat-square)
+![TypeScript](https://img.shields.io/badge/TypeScript-powered-3178c6?style=flat-square)
+![Open Source](https://img.shields.io/badge/open%20source-yes-16a34a?style=flat-square)
 
-**Phase 2 · verified local commands (CLI)**
+**Built with Alan AI and open models for OpenFire 2026.**
 
-- `npm run verify -- --repo <path> --task test,lint --approve`
-- Validates that the path is a Git work tree and the reference resolves to a commit.
-- Runs only allowlisted npm scripts, via `spawn` with `shell: false` and an argument array.
-- Captures exit code, timestamps, duration, and bounded stdout/stderr, and distinguishes
-  `passed`, `failed`, `timed-out` and `spawn-error`.
-- Writes a JSON report that keeps verified command outcomes and heuristic diff findings in separate sections.
+</div>
 
-**v0.3 · Verification Evidence Center (dashboard)**
+---
 
-- A **Evidence** tab that imports those JSON reports from local files, read-only.
-- Strict, size-limited runtime validation: unsupported schemas, tampered summaries, impossible exit codes and unknown fields are rejected with a path and a hint.
-- Shows command status (PASSED / FAILED / TIMED OUT / NOT RUN), exit codes, timestamps, durations, commit, bounded stdout/stderr and recorded limitations.
-- Compares a before/after pair task by task and shows the failure-to-pass transition with both commit SHAs.
-- Keeps heuristic diff findings visually separate from verified command outcomes.
-- Ships a bundled **DEMO DATA** pair generated from the real Phase 2 demo.
+## Why ProofGate?
 
-**v0.4 · AI Fix Advisor (optional)**
+AI-assisted coding makes changing software easier. It doesn't make every change correct. A removed permission check, widened financial threshold, or missing regression test can hide inside an otherwise plausible diff.
 
-- An **Explain with AI** action on each heuristic finding card.
-- Shows exactly which fields will be sent and requires approval before any request.
-- Calls Groq's `POST https://api.groq.com/openai/v1/chat/completions` from a server-only route using `GROQ_API_KEY` and the configured `GROQ_MODEL`.
-- Requires a strict JSON response with `likelyRisk`, `suggestedCorrection`, `recommendedTest` and `limitations`, validates it at runtime and truncates over-long fields.
-- Displays the result in a separate panel labelled **AI SUGGESTION — NOT VERIFIED**, with copy for the suggested correction.
-- Disabled automatically when either environment variable is missing; no model ID is ever substituted.
+**ProofGate turns a change into reviewable evidence, without pretending a pattern match is proof of a bug.** Its deterministic engine points to exact changed lines. The optional AI advisor explains a selected finding with explicit consent. A separate local CLI records the results of *real* test/lint commands, and the Evidence Center compares those results before and after a fix. A read-only GitHub Actions workflow brings diff review to pull requests.
 
-**v0.5 · GitHub Actions diff review**
+> **Important distinction:** **HEURISTIC** means “worth investigating,” **AI SUGGESTION — NOT VERIFIED** means “model-generated advice,” and **PASSED / FAILED** refer only to commands that actually ran. None of these is a guarantee that code is secure.
 
-- A `pull_request` workflow that runs the deterministic engine on the PR diff and writes Markdown and JSON reports.
-- A standalone `npm run ci:analyze` entrypoint that reads a local diff file only — no network calls, no Groq, no code execution.
-- A GitHub job summary with severity counts, evidence locations and the HEURISTIC / NOT VERIFIED disclaimer.
-- Limited to `contents: read`, no secrets, no `pull_request_target`, and never runs code from the PR.
+## See it in action
 
-## Requirements
+**Live dashboard:** https://proofgate-seven.vercel.app/
 
-- Node.js 20.9+ (Next.js 16 requirement; developed on Node 24)
-- npm
-- Git (only needed for the Phase 2 CLI)
+The built-in loan-eligibility example demonstrates changes to validation, authorization, monetary boundaries, and rounding. The sample produces **10 heuristic findings (7 high, 3 low)** in the current demo; they are *potential risks*, not confirmed vulnerabilities.
 
-## Install and run the dashboard
+| Review stage | What you see | What it establishes |
+| --- | --- | --- |
+| **01 · Detect** | Changed files, specific lines, rule IDs, severity, surrounding diff | Deterministic patterns that merit review |
+| **02 · Explain** | Optional Groq-powered risk, correction, and test suggestions | Unverified guidance for a selected finding |
+| **03 · Verify** | Local allowlisted tests/lint, actual exit codes, logs, times, commit | Recorded command outcomes for a trusted checkout |
+| **04 · Compare** | Before/after reports with `FAILED → PASSED` where recorded | Traceable evidence that the specific command result changed |
+| **05 · Integrate** | GitHub Actions job summary and report artifacts | Automatic *diff review* for pull requests; not a test run |
+
+### Product tour in under a minute
+
+1. Open the [live app](https://proofgate-seven.vercel.app/) and select **Load example** → **Analyse diff**.
+2. In **Findings**, expand an authorization or financial-validation finding to see the original code evidence and a suggested test.
+3. Optionally choose **Explain with AI**, inspect the consent details, then **Send to Groq**. This sends a bounded excerpt, **not** the entire repository.
+4. Open **Report** to copy/download the Markdown or JSON analysis.
+5. Open **Evidence** → **Load demo pair** to inspect recorded failure and success results, or import your own CLI-generated reports.
+
+No account is needed for the deterministic dashboard.
+
+## What ships in v0.5
+
+### Diff review — explainable by design
+
+- Accepts standard two-way unified Git diffs up to **200 KB**.
+- Tracks files, hunks, additions/deletions, and old/new line numbers; rejects malformed, binary, combined, or oversized inputs rather than silently guessing.
+- Runs five deterministic rules (PG-001 through PG-005) with evidence, severity, explanation, and a recommended test.
+- Exports Markdown and JSON reports, including provenance and verification limitations.
+
+### AI Fix Advisor — optional and consent-gated
+
+- An **Explain with AI** action is available for each finding.
+- Before any provider request, a consent panel specifies what will be sent: finding metadata, evidence, and at most 20 lines of surrounding diff context.
+- Groq returns structured `likelyRisk`, `suggestedCorrection`, `recommendedTest`, and `limitations` fields; the server validates and bounds the response.
+- Every response is explicitly labelled **AI SUGGESTION — NOT VERIFIED** and never changes the deterministic finding or a test outcome.
+- Missing server credentials disable AI assistance without disabling the rest of ProofGate.
+
+### Trusted-local verification — actual outcomes, not generated scores
+
+- An explicit `--approve` flag is required before executing the fixed `test` and/or `lint` task IDs.
+- Commands run only against a **trusted local Git checkout**, using argument arrays and `spawn` with `shell: false`.
+- Reports record commit, exit code, timestamps, duration, bounded stdout/stderr, timeout/spawn errors, and skipped checks.
+- **This CLI is not a sandbox:** `npm run test` can execute arbitrary repository scripts with your user permissions. Do not use it on untrusted repositories.
+
+### Verification Evidence Center — readable proof
+
+- Import size-limited JSON reports via file picker; the interface **never executes imported data** or fetches paths inside it.
+- See `PASSED`, `FAILED`, `TIMED OUT`, and `NOT RUN` as separate states.
+- Compare before/after runs side by side, including commit references and recorded command output.
+- Try bundled **DEMO DATA**, generated from the reproducible local fixture rather than fictional test outcomes.
+
+### GitHub Actions — review on every pull request
+
+- The workflow in [`.github/workflows/proofgate.yml`](.github/workflows/proofgate.yml) computes a diff and runs the deterministic review CLI.
+- Publishes a GitHub job summary and downloadable Markdown/JSON artifacts.
+- Checks out **base-branch tooling**, fetches the PR head as diff data only, and does **not** execute PR code or call Groq.
+- Uses `pull_request`, read-only `contents: read` permissions, and no application secrets.
+
+**Real workflow validation:** [PR #1](https://github.com/Kalpesh1Sharma/proofgate/pull/1) exercised the GitHub Action. The run completed successfully and produced a review summary. Its documentation-only change produced a low-severity PG-005 heuristic finding; this illustrates that heuristics can produce false positives and should be reviewed critically.
+
+---
+
+## Quick start
+
+**Requirements:** Node.js **20.9+**, npm; Git is required for the local verification CLI. Developed with Next.js 16 and TypeScript.
 
 ```bash
+git clone https://github.com/Kalpesh1Sharma/proofgate.git
+cd proofgate
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000, then:
+Open **http://localhost:3000**. Then select **Load example** → **Analyse diff**.
 
-1. Choose **Load example** — a loan eligibility service that loses an identity check, widens two money thresholds, drops rounding and removes a role guard, with no test changes.
-2. Choose **Analyse diff**.
-3. Open **Findings**: filter by severity, filter by file, expand a finding to see its evidence, context and suggested test.
-4. Open **Report**: switch between Markdown and JSON, copy or download either.
-
-Other commands:
+Useful checks:
 
 ```bash
-npm test          # Vitest unit tests
+npm test          # automated Vitest suite
 npm run lint      # ESLint
-npm run build     # Production build
-npm run typecheck # tsc --noEmit
+npm run typecheck # TypeScript, no emit
+npm run build     # production build
 ```
 
-## Phase 2 · verification CLI
+The v0.5 release was independently exercised with **189 passing automated tests**, a clean lint run, and a successful production build. This is a release-time observation, not a live coverage or quality guarantee.
+
+## Reproduce a real failure → pass
+
+The quickest way to see *verification evidence* instead of a synthetic status is the local demo:
 
 ```bash
-npm run verify -- --repo <path> --ref HEAD --task test,lint --approve
+npm run verify:demo -- --keep
 ```
 
-Options:
+This creates a temporary Git fixture from [`examples/phase2-fix/`](examples/phase2-fix/), runs the allowlisted `test` task with the **failing** implementation, applies the corrected implementation, commits it, and runs the **same real command** again. It prints the workspace path, where you'll find:
 
-| Flag | Meaning |
+```text
+report-before-fix.json   # actual test FAILED (exit 1)
+report-after-fix.json    # actual test PASSED (exit 0)
+```
+
+Open the dashboard's **Evidence** tab and import these files as **Before** and **After**. Or click **Load demo pair** to inspect the shipped, explicitly labelled **DEMO DATA** snapshots. The bundled snapshots preserve recorded outcomes; machine-specific absolute paths are redacted for publication.
+
+### Run approved checks on your own *trusted* repository
+
+```bash
+npm run verify -- --repo <path> --ref HEAD --task test,lint --approve --out report.json
+```
+
+| Option | Meaning |
 | --- | --- |
-| `--repo <path>` | Trusted local Git checkout. Required. |
-| `--ref <git-ref>` | Branch, tag or SHA. Default `HEAD`. |
-| `--task <id,...>` | `test`, `lint`, or both. Default `test`. Repeatable. |
-| `--approve` | Explicit approval to run the allowlisted commands. Required. |
-| `--diff <file>` | Attach Phase 1 heuristic findings for a diff file. |
-| `--out <file>` | Write the JSON report to a file. |
-| `--json` | Print the JSON report to stdout. |
+| `--repo <path>` | Existing trusted local Git work tree; required |
+| `--ref <git-ref>` | Resolved branch/tag/SHA; defaults to `HEAD` |
+| `--task <ids>` | `test`, `lint`, or both; defaults to `test` |
+| `--approve` | Mandatory, explicit authorization to run tasks |
+| `--diff <file>` | Optionally attach separate heuristic findings |
+| `--out <file>` | Save JSON evidence locally |
+| `--json` | Write JSON to standard output |
 
-What actually runs:
+The task allowlist maps only `test` → `npm run test` and `lint` → `npm run lint`. You cannot supply arbitrary shell commands through these flags. **Running a trusted repository's npm scripts still executes code and can access the filesystem or network.**
 
-| Task | Command |
-| --- | --- |
-| `test` | `npm run test` |
-| `lint` | `npm run lint` |
+## Use ProofGate in CI
 
-There is no flag for passing a command. Unknown tasks and unknown arguments are rejected. On Windows the CLI runs `node <npm-cli.js> run <script>` rather than `npm.cmd`, so `shell: false` can be kept end to end.
+The repository includes a pull-request workflow. Once that workflow and the CLI are on the base branch, new PRs trigger a deterministic review and upload report artifacts.
 
-### Demo: failing test before the fix, passing test after
+You can also run the CI analyzer without starting a server:
 
 ```bash
-npm run verify:demo          # runs against a temporary fixture repository
-npm run verify:demo -- --keep  # keeps the workspace and both reports
+# Generate a normal text diff in your preferred shell.
+git diff --no-ext-diff --output=pr.diff origin/main...HEAD
+npm run ci:analyze -- --diff pr.diff --out-dir proofgate-report
 ```
 
-The demo copies `examples/phase2-fix/before` into a temp directory, commits it, and runs the real CLI. The fixture test fails (`applyDiscount(100, 0.9)` returns 10 instead of 70). The demo then copies the fixed implementation, commits, and runs the same allowlisted command again, which passes. Both JSON reports are real command outputs.
+**PowerShell tip:** Prefer Git's `--output=pr.diff` rather than redirecting `git diff > pr.diff`, since older PowerShell versions can write UTF-16 text containing NUL bytes.
 
-### Demo against this repository
+CI generates:
 
-```bash
-npm run verify -- --repo . --task lint --approve --out proofgate-lint-report.json
+```text
+proofgate-report/
+├── proofgate-report.md    # full heuristic review with provenance
+├── proofgate-report.json  # structured review + CI metadata
+└── proofgate-summary.md   # concise GitHub job summary
 ```
 
-To include heuristic findings in the same report, export a diff first and pass `--diff`.
+The optional `--fail-on none|high|medium|low` setting (default `none`) gates on *heuristic severity*, **not** application test failures. Successful CI analysis never means the PR was approved or proved safe. Diffs larger than 200 KB, unsupported formats, and binary patches require separate review.
 
-## Evidence Center walkthrough
+> **Workflow trust boundary:** GitHub evaluates workflow definitions in its own PR context. Protect `.github/workflows/` with CODEOWNERS / branch rules and review workflow edits carefully. The provided workflow does not use `pull_request_target` and does not execute head-branch code.
 
-This is the reproducible path from a local run to the dashboard. It needs no network access.
+## Optional Groq setup
 
-1. Generate a real before/after pair:
+The deterministic review, CI, local verification, and Evidence Center work **without** an API key.
 
-   ```bash
-   npm run verify:demo -- --keep
-   ```
+For AI Fix Advisor, copy `.env.example` to `.env.local` and set the variables:
 
-   The demo prints a workspace path and writes two reports to it:
-
-   ```
-   <workspace>\report-before-fix.json    # PASSED? no — the fixture test really fails
-   <workspace>\report-after-fix.json     # the same command really passes after the fix
-   ```
-
-   Both files are genuine CLI output. Nothing about them is simulated.
-
-2. Start the dashboard and open the **Evidence** tab:
-
-   ```bash
-   npm run dev
-   ```
-
-3. Import the pair. Either:
-
-   - click **Load demo pair** to use the bundled **DEMO DATA** copy of exactly these two runs, or
-   - click **Choose JSON file** in the *Before* slot and select `report-before-fix.json`, then do the same in the *After* slot with `report-after-fix.json`.
-
-4. Read the result:
-
-   - the **Before → after comparison** table shows `test` moving from `FAILED` (exit 1) to `PASSED` (exit 0), with both commit SHAs and duration delta;
-   - each report panel lists the real command, exit code, timestamps, duration and captured output;
-   - heuristic diff findings appear in a separate amber section labelled HEURISTIC, next to the note that a passing command does not confirm or clear them;
-   - the limits recorded by the CLI are shown verbatim.
-
-5. Optional: import only one report to inspect a single run. The comparison appears once both slots hold a report.
-
-### Bundled DEMO DATA
-
-`src/lib/evidence/samples/demo-before-fix.json` and `demo-after-fix.json` are the real output of the demo, copied in by:
-
-```bash
-node scripts/emit-evidence-samples.mjs --from <kept-demo-workspace>
+```dotenv
+GROQ_API_KEY=your_private_groq_key
+GROQ_MODEL=your_supported_model_id
 ```
 
-Publication redaction replaces machine-specific absolute paths (`<demo-workspace>/shop`, `node`, `<npm-cli.js>`) only. Statuses, exit codes, timestamps, durations, commit SHAs, output and limitations are unmodified. The bundled files record the CLI version that produced them (0.2.0); they are kept as evidence and are not rewritten on later releases. The UI always marks these files **Demo data** and states that they are not a live run.
+Use a model ID your Groq account currently supports. The configured model ID is passed through without a silent fallback. Restart the development server after updating `.env.local`. For Vercel, configure both variables as **server-side** environment variables and redeploy; never use a `NEXT_PUBLIC_` prefix.
 
-### Evidence Center security
+The optional advisor calls Groq's chat-completions API only **after per-finding consent**. The server imposes bounded input/output sizes, a 12-second timeout and best-effort rate limits (5 per client and 20 per instance per minute). **In-memory counters are not a global quota on serverless infrastructure**; public deployments should enforce an external shared or platform-level limit.
 
-- Imports are parsed in the browser against a strict schema with a 2 MB cap; unsupported versions, unknown fields, tampered summaries and contradictory statuses are rejected with a message.
-- Nothing in a report is executed, resolved or fetched. A path inside a report is displayed as text, never opened.
-- The tab has no command input, no repository path input and no network calls.
-- Public deployments still cannot run repository code: the CLI is local-only and there is no server route that executes it.
+## How the pieces fit together
 
-## AI Fix Advisor (optional)
-
-The advisor is off unless the server has both variables. It reads them only from server-side code; no `NEXT_PUBLIC_` variant is used or read.
-
-```bash
-# .env.local (never commit this file)
-GROQ_API_KEY=gsk_...
-GROQ_MODEL=llama-3.3-70b-versatile
+```mermaid
+flowchart TD
+    D[Unified Git diff] --> P[Strict diff parser]
+    P --> R[Deterministic rules PG-001 to PG-005]
+    R --> F[Heuristic findings and reports]
+    F -->|Optional, explicit consent| A[Groq AI Fix Advisor]
+    A --> S[Unverified suggestions]
+    T[Trusted local repository] --> V[Approved test / lint CLI]
+    V --> E[Recorded command evidence]
+    E --> C[Read-only Evidence Center]
+    F -.-> C
+    C --> B[Before / after comparison]
+    PR[GitHub pull request] --> W[GitHub Actions diff review]
+    W --> R2[CI summary + report artifacts]
 ```
 
-`.env.example` documents the two names with placeholders. On Vercel, set the same variables for the environment you deploy (server-only scope). A missing or invalid `GROQ_MODEL` disables the feature with a visible note; ProofGate never silently substitutes a model. Use a model ID your Groq account can call — the deployment's configured value is sent verbatim.
+The tracks are intentionally separate: **text-pattern findings**, **AI advice**, and **executed command evidence** are different kinds of information.
 
-### Consent and privacy
+### Detection rules
 
-- The action is per finding. Clicking **Explain with AI** first shows a consent panel listing exactly what would leave the app.
-- Only after **Send to Groq** does the browser call `/api/ai/explain`.
-- The payload contains the selected finding: rule id/title/severity/category, file path and line, the evidence line, up to 20 surrounding diff context lines, the rule explanation and the engine-suggested test. The rest of the diff and repository are not sent.
-- The server re-bounds every string and the assembled prompt, and sends the request with a 12 second timeout, `max_tokens: 700`, and `response_format: json_object`.
-- ProofGate does not store the excerpt or the response, does not log request bodies, and never returns the API key. Groq's own terms and privacy policy apply to its processing.
-- The UI and the API are separate from the deterministic engine. AI output cannot confirm a defect, upgrade a heuristic finding, verify a fix, or claim that tests passed.
-
-### Request limits
-
-| Limit | Value | Notes |
+| Rule | Detects | Typical severity |
 | --- | --- | --- |
-| Provider timeout | 12 s | Returns `504` with a safe error |
-| Output tokens | 700 | Bounded model output |
-| Transport body | 64 KB | Rejected with `413` before parsing deeper |
-| Assembled prompt | 8 KB | Rejected with `413` |
-| Per client | 5 requests / 60 s | In-memory, keyed by `x-forwarded-for` |
-| Per instance | 20 requests / 60 s | In-memory |
+| `PG-001` | Removed validation / rejection guard | Medium; high in money-related files |
+| `PG-002` | Removed authorization, ownership, or role condition | High |
+| `PG-003` | Removed money limit, financial comparison, or rounding | High |
+| `PG-004` | Loosened numeric or comparison boundary | High |
+| `PG-005` | Changed source without a corresponding test change | Low |
 
-**The rate limit is best-effort and per instance.** On serverless deployments such as Vercel, instances are isolated and short-lived, so these counters are not a global quota. For a hard limit, add shared storage or a platform-level WAF/rate-limit rule. The route returns `429` with `Retry-After` and passes an upstream Groq `429` through as `429`.
+These are **bounded text heuristics**, not a semantic proof of a vulnerability. They may miss real issues or flag benign changes.
 
-### Failure behaviour
+<details>
+<summary><strong>Repository structure</strong></summary>
 
-| Condition | Response |
-| --- | --- |
-| `GROQ_API_KEY` or `GROQ_MODEL` missing/invalid | `503 NOT_CONFIGURED`; UI shows a disabled note |
-| Consent missing or withheld | `403 CONSENT_REQUIRED`; no provider call |
-| Invalid or oversized payload | `422` / `413`; no provider call |
-| Groq 429 | `429` with `Retry-After` when provided |
-| Groq 5xx, network failure | `502` safe message; provider body is not echoed |
-| Timeout | `504` |
-| Non-JSON or incomplete model output | `502 INVALID_OUTPUT`; output discarded |
-
-No live provider call happens during automated tests; the suite mocks `fetch`.
-
-### Known limitations
-
-- The advisor is commentary, not verification. It can be wrong, incomplete or over-confident, and it only sees one finding excerpt.
-- Model selection, availability and quotas are controlled by Groq; a misconfigured model id disables the feature rather than falling back.
-- The in-memory rate limit does not protect a fleet. Add a shared limiter for public traffic.
-- Server-side environment variables must be configured on every deployment; preview and production environments are separate.
-- The AI path is deliberately not part of the CLI evidence report, so it is not evidence of a test outcome.
-
-## GitHub Actions PR review (v0.5)
-
-`.github/workflows/proofgate.yml` runs ProofGate's deterministic diff review on every pull request. It produces a job summary and downloadable reports.
-
-### What the workflow does
-
-1. Checks out the **trusted base revision** (`github.event.pull_request.base.sha`).
-2. Fetches the PR head as a Git ref **only** and writes `git diff base head` to a temporary file.
-3. Installs and runs the ProofGate CLI from the base revision.
-4. Appends the summary to `$GITHUB_STEP_SUMMARY` and uploads `proofgate-report/`.
-
-It uses `pull_request`, `permissions: contents: read`, no repository secrets, a fixed Node.js `22.14.0`, and standard `action` runners. It never checks out or executes the PR head, never runs PR tests, and never approves, merges or labels a pull request.
-
-### Reports
-
-The CLI writes three files plus the job summary:
-
-- `proofgate-report.md` — the full deterministic report with a CI context block (base/head, diff SHA-256, "tests not run").
-- `proofgate-report.json` — the existing Phase 1 JSON schema plus a `ci` object with `baseRef`, `headRef`, `analysisStatus: "completed"` and `testsRun: false`.
-- `proofgate-summary.md` — the same concise summary appended to the GitHub job summary.
-- `$GITHUB_STEP_SUMMARY` — risk counts, evidence locations, disclaimer.
-
-### Run it locally on any diff
-
-```bash
-git diff origin/main...HEAD > pr.diff
-npm run ci:analyze -- \
-  --diff pr.diff \
-  --out-dir proofgate-report \
-  --base "$(git rev-parse origin/main)" \
-  --head "$(git rev-parse HEAD)"
-```
-
-Options: `--out-dir` (default `proofgate-report`), `--base`, `--head`, `--summary <file>`, and `--fail-on none|high|medium|low` (default `none`). `--fail-on` is an **optional heuristic gate**: a failure means findings matched, not that tests failed. Successful analysis (exit 0) still does not approve the pull request.
-
-### Trust model and limitations
-
-- **The diff is data.** It is parsed, never executed. The workflow runs only ProofGate code from the base revision and its locked dependencies.
-- **Fork PRs are untrusted.** The PR head is fetched as a ref and passed to `git diff`; it is never checked out, installed or run. The read-only token is not exposed to PR code.
-- **No secrets.** The AI advisor and Groq are not used in CI. No `GROQ_*` variables are needed or read.
-- **Workflow-file changes are sensitive.** For `pull_request`, GitHub uses the workflow definition from the PR merge ref. Protect `.github/workflows/` with `CODEOWNERS` and enable "Require approval for outside collaborators" so a workflow edit cannot run unreviewed.
-- **Bootstrap.** The base branch must already contain `ci:analyze` and the workflow. Merge this change first; earlier PRs cannot use it.
-- **Size.** Diffs over 200 KB are rejected with an actionable error, as are binary and malformed diffs. Split large changes or review them manually.
-- **Not a test run and not a security audit.** No application tests are executed, no coverage is measured, and no confidence score is produced. A successful analysis is not a passing test, not a merge approval and not evidence that the change is safe.
-- **Base-version analysis.** The rules come from the base revision, so a PR that changes the engine is reviewed with the rules already on the base branch.
-
-## Trust boundary and security
-
-ProofGate draws a hard line between *parsing* and *executing*:
-
-- **Diff content is never executed.** It is parsed as text and matched against rules.
-- **No HTTP endpoint executes commands.** `/api/analyze` only parses and analyses a diff. The verification CLI is a local process and has no server route.
-- **Fixed allowlist.** The CLI accepts a task id, not a command. Each id maps to one executable and one argument list in `src/lib/verification/allowlist.ts`.
-- **`shell: false`, argument arrays.** No string is ever handed to a shell.
-- **Validated inputs.** The repository path must exist, be a directory and be a Git work tree; the reference must resolve to a commit and is restricted to Git's ref character set.
-- **Bounded execution.** Per-task timeouts and per-stream output caps; the report records truncation and timeouts explicitly.
-- **No implicit third-party calls.** Deterministic analysis, reports, the CLI and the Evidence Center make no AI calls. The only outbound AI request is the optional Fix Advisor, which requires per-finding consent and sends only the bounded excerpt described above. There is no provider SDK and no other third party.
-
-**The CLI is not a sandbox.** Running `npm run test` or `npm run lint` executes the repository's own scripts with your user's permissions. Those scripts can run arbitrary code, read and write files, and use the network. Only run ProofGate against repositories you trust. Timeouts stop the direct child process; a script that spawns its own detached children may outlive it. Isolation (containers, restricted users, network egress rules) is the responsibility of the operator.
-
-## Privacy statement
-
-- **Dashboard:** the diff you paste is sent from your browser to this application's own `/api/analyze` route, which analyses it in-process. It is not stored — there is no database, account system or upload folder — and it is not forwarded to any external service.
-- **AI advisor (optional):** only when you click **Send to Groq** on a finding does a bounded excerpt leave the app, as described in [AI Fix Advisor](#ai-fix-advisor-optional). The server does not store or log it.
-- **Deployed instance:** the same is true, but "local" then means "the server you deployed". The diff travels over HTTP to that deployment, so use HTTPS and only deploy where you are comfortable processing the code you paste.
-- **CLI:** entirely local. It reads the diff file only if you pass `--diff`, and it writes reports only where you tell it to (`--out`) or to the temporary demo workspace.
-
-## Architecture
-
-```
+```text
 src/
-├─ app/
-│  ├─ page.tsx                 dashboard entry
-│  └─ api/
-│     ├─ analyze/route.ts      POST diff → analysis JSON (no execution)
-│     └─ ai/
-│        ├─ explain/route.ts   POST consent-gated finding → Groq suggestion
-│        └─ status/route.ts    GET AI availability (no credentials)
-├─ components/                 dashboard, findings, report, method views
-│  ├─ ai/                      consent panel, AI suggestion panel, status hook
-│  └─ evidence/                Evidence Center (import, compare, render)
-├─ cli/
-│  ├─ verify.ts                Phase 2 CLI (approval, orchestration, output)
-│  └─ ci.ts                    v0.5 CI entrypoint (local diff → reports + summary)
-└─ lib/
-   ├─ engine/                  pure Phase 1 engine
-   │  ├─ types.ts
-   │  ├─ parse-diff.ts         strict unified-diff parser
-   │  ├─ rules.ts              PG-001..PG-005 deterministic rules
-   │  ├─ analyze.ts            server-only orchestration + hashing
-   │  └─ limits.ts             tool metadata + limits of verification
-   ├─ ai/                      AI Fix Advisor (server-only)
-   │  ├─ config.ts             GROQ_API_KEY / GROQ_MODEL, no fallback model
-   │  ├─ prompt.ts             request validation, bounds, prompt assembly
-   │  ├─ groq.ts               fetch + 12s timeout + failure mapping
-   │  ├─ suggestion.ts         strict JSON output validation + truncation
-   │  ├─ http.ts               AI error → HTTP status mapping
-   │  └─ rate-limit.ts         best-effort per-instance limiter
-   ├─ verification/            Phase 2 trusted-local execution
-   │  ├─ types.ts
-   │  ├─ allowlist.ts          fixed task → command mapping
-   │  ├─ repository.ts         path, Git and ref validation
-   │  ├─ runner.ts             spawn(shell:false) + timeout + output caps
-   │  └─ report.ts             verified vs heuristic JSON evidence report
-   ├─ evidence/                Evidence Center parsing and interpretation
-   │  ├─ types.ts              view model + limits
-   │  ├─ schema.ts             strict runtime validation of imported reports
-   │  ├─ compare.ts            status interpretation + before/after comparison
-   │  ├─ samples.ts            bundled DEMO DATA pair + provenance
-   │  └─ samples/              the real demo JSON reports
-   ├─ reports/build-report.ts  Markdown / JSON Phase 1 reports
-   ├─ ci/summary.ts            CI provenance, JSON wrapper and job summary
-   ├─ adapters/                provider seam (unimplemented, disabled)
-   └─ examples/                bundled demo diff
-examples/phase2-fix/           before/after fixture repository
-.github/workflows/proofgate.yml  pull_request diff review (contents: read)
-scripts/phase2-demo.mjs        before/after demo driver
-scripts/emit-evidence-samples.mjs  redacts and bundles the demo pair
-tests/                         parsing, rules, reports, verification, evidence, AI, CI
+├── app/api/analyze/           deterministic diff analysis endpoint
+├── app/api/ai/                consent-gated Groq suggestion + availability
+├── components/ai/             finding-level AI consent and suggestion UI
+├── components/evidence/       report importer, summaries, comparison
+├── cli/verify.ts              allowlisted trusted-local verification
+├── cli/ci.ts                  local unified diff → CI reports
+└── lib/
+    ├── engine/                parser, rules, types, limits
+    ├── verification/          Git/ref checks, allowlist, runner, reports
+    ├── evidence/              strict report validation and comparison
+    ├── ai/                    server-only prompt, provider, validation
+    ├── reports/               Markdown / JSON builders
+    └── ci/                    summary and provenance
+examples/phase2-fix/           reproducible before-and-after test fixture
+scripts/                       demo and sample generation
+tests/                         parser, rules, reports, verification, evidence, AI, CI
+.github/workflows/proofgate.yml
 ```
 
-### Verification rules (Phase 1)
+</details>
 
-| Rule | Looks for | Default severity |
-| --- | --- | --- |
-| `PG-001` | Removed validation, assertion or rejection path | medium (high in money files) |
-| `PG-002` | Removed role, permission, ownership or tenant condition | high |
-| `PG-003` | Removed money/material comparison, limit or rounding | high |
-| `PG-004` | A comparison boundary that now passes more values | high |
-| `PG-005` | Changed source file with no paired test change | low |
+## Security, privacy, and limitations
 
-Overlapping matches inside one contiguous removed block are resolved deterministically: the block is owned by exactly one rule (validation → authorization → money), so one removal produces one finding.
+ProofGate is designed to make its **trust boundaries visible**:
 
-### Verified outcomes vs heuristic findings
+| Component | Execution / data boundary |
+| --- | --- |
+| **Diff review** | The diff is parsed as untrusted text; it is never executed. In the hosted app, submitted text is processed by the app's server at `/api/analyze`, not solely on your device. |
+| **AI advisor** | An explicitly approved excerpt is sent to Groq. Provider processing policies apply. AI suggestions are not verified findings. |
+| **Evidence Center** | Imported JSON is validated and displayed locally in the browser; report paths are not resolved, executed, or fetched. |
+| **Verification CLI** | Runs allowlisted npm scripts **locally** in a trusted Git work tree, with the operator's permissions. **Not sandboxed.** |
+| **GitHub Actions** | Runs base-revision ProofGate code against diff data; does not run PR code or application tests. |
 
-The Phase 2 report never mixes the two:
+**What ProofGate does not promise:** complete security auditing, vulnerability confirmation, full code understanding from a diff, automated repairs, comprehensive test coverage, approval to merge, or proof that a codebase is safe. A passing test verifies only the executed task under the recorded conditions. A zero-finding review is not a security clearance.
 
-```jsonc
-{
-  "verified": {
-    "runs": [{ "taskId": "test", "status": "passed", "exitCode": 0, "...": "..." }],
-    "summary": { "total": 1, "passed": 1, "failed": 0, "timedOut": 0, "spawnErrors": 0 }
-  },
-  "heuristic": {
-    "status": "included",
-    "classification": "HEURISTIC",
-    "findings": [{ "ruleId": "PG-004", "...": "..." }]
-  },
-  "limitations": ["..."]
-}
-```
+Additional constraints: no authentication or database; the local verification runner supports npm projects; GitHub CI reviews text diffs up to 200 KB; the AI rate limiter is per instance; attached reports are limited and validated. Review the implementation and operate the CLI only on repositories you trust.
 
-A report only counts as a pass when every requested command ran and exited 0. Skipped checks, timeouts and spawn errors all prevent that.
+## Contributing
 
-## Constraints
+Contributions, focused bug reports, and reproducible fixtures are welcome. For a useful report, include the ProofGate version, relevant command or diff format, expected behavior, actual behavior, and **redacted** error output. Do not publish tokens, private source code, or sensitive customer data in issues.
 
-- Phase 1 rules are text heuristics over a diff. They can be wrong in both directions, and a finding is never a confirmed defect.
-- No test results, coverage numbers, confidence percentages or safety claims are generated in the dashboard.
-- Verification commands always come from the allowlist; there is no plugin mechanism for adding commands at runtime.
-- Only npm projects are supported in Phase 2.
-- No authentication, database or multi-user support.
+Start with [GitHub Issues](https://github.com/Kalpesh1Sharma/proofgate/issues). Run `npm test`, `npm run lint`, and `npm run build` before submitting a pull request. For security-sensitive issues, avoid posting exploitable private details in a public issue.
 
-## Roadmap
+## Built for OpenFire
 
-- **Phase 2 (current):** trusted-local test/lint execution with evidence reports.
-- **v0.3 (current):** read-only Verification Evidence Center with before/after comparison.
-- **v0.4 (current, optional):** consent-gated Groq AI Fix Advisor, labelled as an unverified suggestion.
-- **v0.5 (current):** GitHub Actions pull-request diff review with Markdown/JSON reports and a job summary.
-- **Future:** replace the best-effort in-memory AI limiter with shared storage or a platform rate limit; add more model providers behind the existing adapter seam. Deterministic findings and verified command outcomes remain the source of truth.
+Built using **Alan AI** and open models for **OpenFire 2026**. ProofGate's goal is practical: help developers move from *“the AI says this looks fine”* to *“here's the exact change, the potential risk, and the test evidence we actually have.”*
+
+**[Launch ProofGate](https://proofgate-seven.vercel.app/) · [View source](https://github.com/Kalpesh1Sharma/proofgate)**
+
+---
+
+<div align="center">
+
+**ProofGate · Evidence over assumption.**
+
+[MIT License](LICENSE)
+
+</div>
