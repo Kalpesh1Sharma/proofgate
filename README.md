@@ -403,3 +403,5 @@ A report only counts as a pass when every requested command ran and exited 0. Sk
 - **v0.4 (current, optional):** consent-gated Groq AI Fix Advisor, labelled as an unverified suggestion.
 - **v0.5 (current):** GitHub Actions pull-request diff review with Markdown/JSON reports and a job summary.
 - **Future:** replace the best-effort in-memory AI limiter with shared storage or a platform rate limit; add more model providers behind the existing adapter seam. Deterministic findings and verified command outcomes remain the source of truth.
+
+<!-- ProofGate CI workflow test -->
