@@ -254,7 +254,7 @@ describe("analyzeDiff", () => {
     expect(result.parsed.files).toHaveLength(3);
     expect(result.tool).toEqual({
       name: "ProofGate",
-      version: "0.3.0",
+      version: "0.4.0",
       engine: "deterministic-heuristics-v1",
     });
     expect(result.generatedAt).toBe(FIXED_TIME);

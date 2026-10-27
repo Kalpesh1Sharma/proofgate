@@ -25,15 +25,15 @@ const PIPELINE = [
 const SECURITY = [
   {
     title: "No code execution",
-    body: "Pasted code is never imported, evaluated or run. Phase 1 has no test runner and no shell surface.",
+    body: "Pasted code is never imported, evaluated or run. The AI advisor does not execute anything either; it only returns text.",
   },
   {
-    title: "No network egress",
-    body: "The only request the UI makes is to this app's own /api/analyze route. No model provider is configured or called.",
+    title: "No implicit egress",
+    body: "Deterministic analysis stays in this app's own /api/analyze route. The only outbound request is the optional AI advisor to Groq, and only after you approve sending one finding. No other third party is called.",
   },
   {
     title: "No storage",
-    body: "There is no database, account or upload store. The diff exists in component state and in the response only.",
+    body: "There is no database, account or upload store. The diff and any AI excerpt exist in request memory only, and the AI request is not logged or persisted.",
   },
 ];
 
@@ -144,25 +144,25 @@ export function MethodView() {
       <section className="panel p-4" aria-labelledby="roadmap-heading">
         <h2 id="roadmap-heading" className="flex items-center gap-2 text-sm font-semibold text-ink">
           <FileCodeIcon className="h-4 w-4 text-faint" />
-          Deliberately not implemented yet
+          Optional and local-only capabilities
         </h2>
         <div className="mt-3 grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-line bg-elevated/50 p-3">
-            <div className="label-mono">Phase 2 · seam exists</div>
+            <div className="label-mono">Phase 2 · local CLI</div>
             <h3 className="mt-1.5 text-xs font-semibold text-ink">Trusted local test runner</h3>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              The adapter types require an explicitly selected local checkout, a clean commit,
-              allowlisted commands, a timeout and an output cap. No runner is wired to HTTP.
-              Until then, ProofGate reports no test results at all.
+              Runs only allowlisted test/lint scripts against a checkout you select, from a local
+              CLI with explicit approval, timeouts and output caps. It is not wired to HTTP and is
+              not a sandbox.
             </p>
           </div>
           <div className="rounded-lg border border-line bg-elevated/50 p-3">
-            <div className="label-mono">Phase 3 · seam exists</div>
-            <h3 className="mt-1.5 text-xs font-semibold text-ink">Open-model explanations</h3>
+            <div className="label-mono">v0.4 · optional</div>
+            <h3 className="mt-1.5 text-xs font-semibold text-ink">AI Fix Advisor (Groq)</h3>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              A provider interface with a disabled implementation. Future use requires an
-              explicit developer action per finding, minimal evidence sharing and a
-              classification that never upgrades heuristic output to verification.
+              Sends one finding excerpt to Groq only after a per-finding consent prompt. Disabled
+              automatically without server-side credentials. The output is labelled AI SUGGESTION —
+              NOT VERIFIED and can never confirm a defect or claim a test passed.
             </p>
           </div>
         </div>

@@ -3,6 +3,8 @@ import { useState } from "react";
 import { copyText } from "@/lib/client/download";
 import type { Finding } from "@/lib/engine/types";
 
+import { AiSuggestionPanel } from "./ai/ai-suggestion-panel";
+import type { AiStatus } from "./ai/use-ai-status";
 import { CheckIcon, ChevronDownIcon, CopyIcon } from "./icons";
 import { HeuristicBadge, SeverityBadge } from "./ui";
 
@@ -14,9 +16,11 @@ function locationLabel(finding: Finding): string {
 export function FindingCard({
   finding,
   defaultOpen = false,
+  aiStatus,
 }: {
   finding: Finding;
   defaultOpen?: boolean;
+  aiStatus: AiStatus;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [copied, setCopied] = useState(false);
@@ -155,6 +159,8 @@ export function FindingCard({
             </div>
             <p className="text-[13px] leading-relaxed text-ink/90">{finding.suggestedTest}</p>
           </div>
+
+          <AiSuggestionPanel finding={finding} status={aiStatus} />
         </div>
       </div>
     </article>

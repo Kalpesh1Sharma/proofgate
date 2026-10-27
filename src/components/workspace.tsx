@@ -40,7 +40,7 @@ const VIEW_COPY: Record<View, { eyebrow: string; title: string; description: str
     eyebrow: "Step 1 · Input",
     title: "Paste a unified diff",
     description:
-      "ProofGate parses the diff, runs deterministic rules over it and shows you the evidence. The diff is never executed and is sent only to this app's own analysis route — not to an external model or service.",
+      "ProofGate parses the diff, runs deterministic rules over it and shows you the evidence. The diff is never executed. Deterministic analysis stays in this app; an optional AI suggestion sends only one finding excerpt to Groq, and only after you approve it.",
   },
   findings: {
     eyebrow: "Step 2 · Review",
@@ -207,7 +207,7 @@ export function Workspace({ exampleDiff }: { exampleDiff: string }) {
           <div className="space-y-3 border-t border-line pt-4">
             <div className="flex items-center gap-2 px-2 text-[11px] text-faint">
               <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent-strong" />
-              No execution · no external calls
+              No execution · AI opt-in
             </div>
             <button
               type="button"
@@ -228,7 +228,7 @@ export function Workspace({ exampleDiff }: { exampleDiff: string }) {
                 </span>
                 <div className="text-sm font-semibold tracking-tight text-ink">ProofGate</div>
               </div>
-              <span className="label-mono">No execution · no external calls</span>
+              <span className="label-mono">No execution · AI opt-in</span>
             </div>
             <nav aria-label="Workspace" className="flex gap-1 overflow-x-auto px-3 pb-3">
               {NAV.map((item) => {
@@ -459,7 +459,7 @@ export function Workspace({ exampleDiff }: { exampleDiff: string }) {
                 execute the submitted code, run tests, or verify that a change is correct or
                 safe.
               </p>
-              <p className="font-mono">Phase 1 · open source · no external calls</p>
+              <p className="font-mono">Open source · no execution · AI opt-in</p>
             </div>
           </footer>
         </div>

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import type { AnalysisResult, Severity } from "@/lib/engine/types";
 
+import { useAiStatus } from "./ai/use-ai-status";
 import { FindingCard } from "./finding-card";
 import { FileCodeIcon, FilterIcon } from "./icons";
 import { Callout, HeuristicBadge, SEVERITY_META, SeverityBadge, Stat } from "./ui";
@@ -29,6 +30,7 @@ export function FindingsView({
   isStale,
   onReanalyze,
 }: FindingsViewProps) {
+  const aiStatus = useAiStatus();
   const fileCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const file of result.parsed.files) counts.set(file.path, 0);
@@ -281,6 +283,7 @@ export function FindingsView({
               <FindingCard
                 key={finding.id}
                 finding={finding}
+                aiStatus={aiStatus}
                 defaultOpen={index === 0 && severityFilter === "all" && fileFilter === "all"}
               />
             ))

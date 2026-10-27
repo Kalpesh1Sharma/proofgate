@@ -1,13 +1,10 @@
 /**
- * Phase 3 seam: optional open-model explanations through an explicit provider
- * adapter.
+ * Optional provider seam for future explanation providers.
  *
- * Phase 1 never calls a model. Any future adapter must:
- *  - require an explicit developer action for every request;
- *  - send only the minimum selected evidence, never the whole repository;
- *  - be disabled by default and configured by the developer;
- *  - keep the deterministic findings as the source of truth;
- *  - label model output as commentary, never as verification.
+ * The v0.4 AI Fix Advisor is implemented in `src/lib/ai` with one Groq
+ * adapter, gated by per-finding consent and disabled without credentials.
+ * This interface remains for adding other providers later; it is not used by
+ * the current dashboard and must never upgrade model output to verification.
  */
 
 import type { Finding } from "../engine/types";
@@ -45,7 +42,7 @@ export class DisabledExplanationProvider implements ExplanationProvider {
 
   async explain(): Promise<Explanation> {
     throw new Error(
-      "Model explanations are not enabled in Phase 1. No source code was sent anywhere.",
+      "This provider is not enabled. Use the consent-gated AI Fix Advisor on a finding card instead.",
     );
   }
 }
