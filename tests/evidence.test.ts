@@ -4,6 +4,7 @@ import {
   compareReports,
   displayStatusOfRun,
   outcomeForTask,
+  summarizeOutcomes,
   taskOutcomes,
 } from "../src/lib/evidence/compare";
 import { loadDemoEvidence } from "../src/lib/evidence/samples";
@@ -367,5 +368,98 @@ describe("bundled demo data", () => {
     const serialised = JSON.stringify(beforeSample) + JSON.stringify(afterSample);
     expect(serialised).not.toMatch(/[A-Za-z]:\\\\Users/);
     expect(serialised).toContain("<demo-workspace>/shop");
+  });
+});
+
+describe("compact outcome derivation", () => {
+  it("returns null when a report is missing", () => {
+    expect(summarizeOutcomes(null)).toBeNull();
+  });
+
+  it("derives the failed outcome from the before-fix demo report", () => {
+    const tally = summarizeOutcomes(BEFORE);
+    expect(tally).not.toBeNull();
+    expect(tally?.total).toBe(1);
+    expect(tally?.counts).toEqual({
+      PASSED: 0,
+      FAILED: 1,
+      "TIMED OUT": 0,
+      "NOT RUN": 0,
+    });
+    expect(tally?.present).toEqual(["FAILED"]);
+    expect(tally?.hasFailure).toBe(true);
+    expect(tally?.allPassed).toBe(false);
+  });
+
+  it("derives the passed outcome from the after-fix demo report", () => {
+    const tally = summarizeOutcomes(AFTER);
+    expect(tally?.counts.PASSED).toBe(1);
+    expect(tally?.present).toEqual(["PASSED"]);
+    expect(tally?.hasFailure).toBe(false);
+    expect(tally?.allPassed).toBe(true);
+  });
+
+  it("counts a skipped check as NOT RUN, not as passed", () => {
+    const report = reportWith(BEFORE, [baseRun()], [
+      { taskId: "lint", reason: "Script not present in package.json." },
+    ]);
+    const tally = summarizeOutcomes(report);
+    expect(tally?.counts.FAILED).toBe(1);
+    expect(tally?.counts["NOT RUN"]).toBe(1);
+    expect(tally?.hasNotRun).toBe(true);
+    expect(tally?.allPassed).toBe(false);
+  });
+
+  it("counts a spawn error as NOT RUN", () => {
+    const report = reportWith(BEFORE, [
+      { ...baseRun(), status: "spawn-error", spawnError: "ENOENT", exitCode: null },
+    ]);
+    const tally = summarizeOutcomes(report);
+    expect(tally?.counts["NOT RUN"]).toBe(1);
+    expect(tally?.counts.PASSED).toBe(0);
+    expect(tally?.counts.FAILED).toBe(0);
+    expect(tally?.hasNotRun).toBe(true);
+  });
+
+  it("counts a timeout separately from a failure", () => {
+    const report = reportWith(BEFORE, [
+      { ...baseRun(), status: "timed-out", timedOut: true, exitCode: null },
+    ]);
+    const tally = summarizeOutcomes(report);
+    expect(tally?.counts["TIMED OUT"]).toBe(1);
+    expect(tally?.counts.FAILED).toBe(0);
+    expect(tally?.hasFailure).toBe(true);
+  });
+
+  it("derives a mixed tally without merging statuses", () => {
+    const report = reportWith(
+      BEFORE,
+      [
+        { ...baseRun(), status: "passed", exitCode: 0 },
+        baseRun(),
+        { ...baseRun(), taskId: "lint", label: "Lint", status: "timed-out", timedOut: true, exitCode: null },
+      ],
+      [{ taskId: "typecheck", reason: "Not requested." }],
+    );
+    const tally = summarizeOutcomes(report);
+    expect(tally?.total).toBe(4);
+    expect(tally?.counts).toEqual({
+      PASSED: 1,
+      FAILED: 1,
+      "TIMED OUT": 1,
+      "NOT RUN": 1,
+    });
+    expect(tally?.hasFailure).toBe(true);
+    expect(tally?.hasNotRun).toBe(true);
+    expect(tally?.allPassed).toBe(false);
+  });
+
+  it("reports an empty report as never all-passed", () => {
+    const report = reportWith(BEFORE, []);
+    const tally = summarizeOutcomes(report);
+    expect(tally?.total).toBe(0);
+    expect(tally?.present).toEqual([]);
+    expect(tally?.allPassed).toBe(false);
+    expect(tally?.hasFailure).toBe(false);
   });
 });

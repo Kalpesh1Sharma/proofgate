@@ -70,6 +70,52 @@ export function taskIdsOf(report: EvidenceReport): string[] {
   return [...ids].sort();
 }
 
+export interface OutcomeTally {
+  total: number;
+  counts: Record<DisplayStatus, number>;
+  /** Statuses in display order, limited to the ones that actually occurred. */
+  present: DisplayStatus[];
+  hasFailure: boolean;
+  hasNotRun: boolean;
+  allPassed: boolean;
+}
+
+/**
+ * Derives the outcome tally for one validated report.
+ *
+ * The tally is computed from the recorded runs and skipped checks, never from
+ * a claimed summary. A spawn error or a skipped check counts as NOT RUN
+ * because no command completed. Returns `null` when no report was imported.
+ */
+export function summarizeOutcomes(report: EvidenceReport | null): OutcomeTally | null {
+  if (!report) return null;
+
+  const counts: Record<DisplayStatus, number> = {
+    PASSED: 0,
+    FAILED: 0,
+    "TIMED OUT": 0,
+    "NOT RUN": 0,
+  };
+
+  for (const outcome of taskOutcomes(report)) {
+    counts[outcome.status] += 1;
+  }
+
+  const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
+  const present = (Object.keys(counts) as DisplayStatus[]).filter(
+    (status) => counts[status] > 0,
+  );
+
+  return {
+    total,
+    counts,
+    present,
+    hasFailure: counts.FAILED > 0 || counts["TIMED OUT"] > 0,
+    hasNotRun: counts["NOT RUN"] > 0,
+    allPassed: total > 0 && counts.PASSED === total,
+  };
+}
+
 export type Transition =
   | "fixed"
   | "regressed"

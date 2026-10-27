@@ -13,6 +13,7 @@ import { MAX_EVIDENCE_BYTES } from "@/lib/evidence/types";
 import { ArrowRightIcon, DatabaseIcon, ShieldCheckIcon, UploadIcon } from "../icons";
 import { Callout, EmptyState } from "../ui";
 import { EvidenceComparisonPanel } from "./comparison-panel";
+import { EvidenceOutcomeSummary } from "./outcome-summary";
 import { EvidenceReportPanel } from "./report-panel";
 import { DemoBadge } from "./status-badge";
 
@@ -342,6 +343,10 @@ export function EvidenceView() {
         {notice ?? ""}
       </p>
       {notice ? <Callout tone="neutral">{notice}</Callout> : null}
+
+      {hasAny ? (
+        <EvidenceOutcomeSummary before={reports.before} after={reports.after} />
+      ) : null}
 
       {!hasAny ? (
         <EmptyState
