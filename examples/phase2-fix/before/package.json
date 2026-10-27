@@ -1,0 +1,9 @@
+{
+  "name": "proofgate-phase2-demo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Trusted repository used by the ProofGate Phase 2 demo",
+  "scripts": {
+    "test": "node --test tests/discount.test.js"
+  }
+}

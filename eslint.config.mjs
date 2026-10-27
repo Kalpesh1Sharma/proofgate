@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone fixture repositories used by the Phase 2 demo. They are not
+    // part of this app and intentionally use plain CommonJS.
+    "examples/**",
   ]),
 ]);
 
