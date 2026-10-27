@@ -42,6 +42,13 @@ It never executes the code in a diff. Deterministic analysis stays in-process. T
 - Displays the result in a separate panel labelled **AI SUGGESTION — NOT VERIFIED**, with copy for the suggested correction.
 - Disabled automatically when either environment variable is missing; no model ID is ever substituted.
 
+**v0.5 · GitHub Actions diff review**
+
+- A `pull_request` workflow that runs the deterministic engine on the PR diff and writes Markdown and JSON reports.
+- A standalone `npm run ci:analyze` entrypoint that reads a local diff file only — no network calls, no Groq, no code execution.
+- A GitHub job summary with severity counts, evidence locations and the HEURISTIC / NOT VERIFIED disclaimer.
+- Limited to `contents: read`, no secrets, no `pull_request_target`, and never runs code from the PR.
+
 ## Requirements
 
 - Node.js 20.9+ (Next.js 16 requirement; developed on Node 24)
@@ -227,6 +234,52 @@ No live provider call happens during automated tests; the suite mocks `fetch`.
 - Server-side environment variables must be configured on every deployment; preview and production environments are separate.
 - The AI path is deliberately not part of the CLI evidence report, so it is not evidence of a test outcome.
 
+## GitHub Actions PR review (v0.5)
+
+`.github/workflows/proofgate.yml` runs ProofGate's deterministic diff review on every pull request. It produces a job summary and downloadable reports.
+
+### What the workflow does
+
+1. Checks out the **trusted base revision** (`github.event.pull_request.base.sha`).
+2. Fetches the PR head as a Git ref **only** and writes `git diff base head` to a temporary file.
+3. Installs and runs the ProofGate CLI from the base revision.
+4. Appends the summary to `$GITHUB_STEP_SUMMARY` and uploads `proofgate-report/`.
+
+It uses `pull_request`, `permissions: contents: read`, no repository secrets, a fixed Node.js `22.14.0`, and standard `action` runners. It never checks out or executes the PR head, never runs PR tests, and never approves, merges or labels a pull request.
+
+### Reports
+
+The CLI writes three files plus the job summary:
+
+- `proofgate-report.md` — the full deterministic report with a CI context block (base/head, diff SHA-256, "tests not run").
+- `proofgate-report.json` — the existing Phase 1 JSON schema plus a `ci` object with `baseRef`, `headRef`, `analysisStatus: "completed"` and `testsRun: false`.
+- `proofgate-summary.md` — the same concise summary appended to the GitHub job summary.
+- `$GITHUB_STEP_SUMMARY` — risk counts, evidence locations, disclaimer.
+
+### Run it locally on any diff
+
+```bash
+git diff origin/main...HEAD > pr.diff
+npm run ci:analyze -- \
+  --diff pr.diff \
+  --out-dir proofgate-report \
+  --base "$(git rev-parse origin/main)" \
+  --head "$(git rev-parse HEAD)"
+```
+
+Options: `--out-dir` (default `proofgate-report`), `--base`, `--head`, `--summary <file>`, and `--fail-on none|high|medium|low` (default `none`). `--fail-on` is an **optional heuristic gate**: a failure means findings matched, not that tests failed. Successful analysis (exit 0) still does not approve the pull request.
+
+### Trust model and limitations
+
+- **The diff is data.** It is parsed, never executed. The workflow runs only ProofGate code from the base revision and its locked dependencies.
+- **Fork PRs are untrusted.** The PR head is fetched as a ref and passed to `git diff`; it is never checked out, installed or run. The read-only token is not exposed to PR code.
+- **No secrets.** The AI advisor and Groq are not used in CI. No `GROQ_*` variables are needed or read.
+- **Workflow-file changes are sensitive.** For `pull_request`, GitHub uses the workflow definition from the PR merge ref. Protect `.github/workflows/` with `CODEOWNERS` and enable "Require approval for outside collaborators" so a workflow edit cannot run unreviewed.
+- **Bootstrap.** The base branch must already contain `ci:analyze` and the workflow. Merge this change first; earlier PRs cannot use it.
+- **Size.** Diffs over 200 KB are rejected with an actionable error, as are binary and malformed diffs. Split large changes or review them manually.
+- **Not a test run and not a security audit.** No application tests are executed, no coverage is measured, and no confidence score is produced. A successful analysis is not a passing test, not a merge approval and not evidence that the change is safe.
+- **Base-version analysis.** The rules come from the base revision, so a PR that changes the engine is reviewed with the rules already on the base branch.
+
 ## Trust boundary and security
 
 ProofGate draws a hard line between *parsing* and *executing*:
@@ -262,7 +315,9 @@ src/
 ├─ components/                 dashboard, findings, report, method views
 │  ├─ ai/                      consent panel, AI suggestion panel, status hook
 │  └─ evidence/                Evidence Center (import, compare, render)
-├─ cli/verify.ts               Phase 2 CLI (approval, orchestration, output)
+├─ cli/
+│  ├─ verify.ts                Phase 2 CLI (approval, orchestration, output)
+│  └─ ci.ts                    v0.5 CI entrypoint (local diff → reports + summary)
 └─ lib/
    ├─ engine/                  pure Phase 1 engine
    │  ├─ types.ts
@@ -290,12 +345,14 @@ src/
    │  ├─ samples.ts            bundled DEMO DATA pair + provenance
    │  └─ samples/              the real demo JSON reports
    ├─ reports/build-report.ts  Markdown / JSON Phase 1 reports
+   ├─ ci/summary.ts            CI provenance, JSON wrapper and job summary
    ├─ adapters/                provider seam (unimplemented, disabled)
    └─ examples/                bundled demo diff
 examples/phase2-fix/           before/after fixture repository
+.github/workflows/proofgate.yml  pull_request diff review (contents: read)
 scripts/phase2-demo.mjs        before/after demo driver
 scripts/emit-evidence-samples.mjs  redacts and bundles the demo pair
-tests/                         parsing, rules, reports, verification, evidence, AI
+tests/                         parsing, rules, reports, verification, evidence, AI, CI
 ```
 
 ### Verification rules (Phase 1)
@@ -344,4 +401,5 @@ A report only counts as a pass when every requested command ran and exited 0. Sk
 - **Phase 2 (current):** trusted-local test/lint execution with evidence reports.
 - **v0.3 (current):** read-only Verification Evidence Center with before/after comparison.
 - **v0.4 (current, optional):** consent-gated Groq AI Fix Advisor, labelled as an unverified suggestion.
+- **v0.5 (current):** GitHub Actions pull-request diff review with Markdown/JSON reports and a job summary.
 - **Future:** replace the best-effort in-memory AI limiter with shared storage or a platform rate limit; add more model providers behind the existing adapter seam. Deterministic findings and verified command outcomes remain the source of truth.

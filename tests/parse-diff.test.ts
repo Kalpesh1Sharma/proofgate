@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -322,5 +325,115 @@ describe("parseUnifiedDiff", () => {
       makeDiff("src/__tests__/loan.test.ts", ["-old", "+new"]),
     );
     expect(parsed.files[0].isTest).toBe(true);
+  });
+});
+
+describe("real Git diff compatibility", () => {
+  const fixture = fs.readFileSync(
+    path.join(process.cwd(), "tests", "fixtures", "git-no-newline-multi-file.diff"),
+    "utf8",
+  );
+
+  it("parses a no-newline marker at a hunk boundary before the next file", () => {
+    // Regression for the exact construct that failed on a real git diff:
+    // a hunk's counts were satisfied, then `\ No newline at end of file`
+    // appeared before the next `diff --git` section.
+    const parsed = parseUnifiedDiff(fixture);
+
+    expect(parsed.stats).toEqual({
+      files: 2,
+      hunks: 2,
+      additions: 2,
+      deletions: 3,
+    });
+    expect(parsed.files[0].path).toBe("src/one.ts");
+    expect(parsed.files[0].changeType).toBe("added");
+    expect(parsed.files[0].hunks[0].noNewlineAtEof).toBe(true);
+    expect(parsed.files[1].path).toBe("src/validate.ts");
+    expect(parsed.files[1].hunks[0].noNewlineAtEof).toBe(false);
+  });
+
+  it("parses a no-newline marker on the final hunk of the diff", () => {
+    const diff = [
+      "diff --git a/src/a.ts b/src/a.ts",
+      "new file mode 100644",
+      "index 0000000..1111111",
+      "--- /dev/null",
+      "+++ b/src/a.ts",
+      "@@ -0,0 +1,1 @@",
+      "+export const a = 1;",
+      "\\ No newline at end of file",
+      "",
+    ].join("\n");
+
+    const parsed = parseUnifiedDiff(diff);
+    expect(parsed.files[0].hunks[0].noNewlineAtEof).toBe(true);
+    expect(parsed.stats.additions).toBe(1);
+  });
+
+  it("parses markers between the old and new lines inside a hunk", () => {
+    const diff = [
+      "diff --git a/src/a.ts b/src/a.ts",
+      "--- a/src/a.ts",
+      "+++ b/src/a.ts",
+      "@@ -1,1 +1,1 @@",
+      "-old",
+      "\\ No newline at end of file",
+      "+new",
+      "\\ No newline at end of file",
+      "",
+    ].join("\n");
+
+    const parsed = parseUnifiedDiff(diff);
+    expect(parsed.files[0].hunks[0].noNewlineAtEof).toBe(true);
+    expect(parsed.stats).toEqual({
+      files: 1,
+      hunks: 1,
+      additions: 1,
+      deletions: 1,
+    });
+  });
+
+  it("accepts mode-only and copy metadata entries", () => {
+    const modeOnly = [
+      "diff --git a/tools/run.sh b/tools/run.sh",
+      "old mode 100644",
+      "new mode 100755",
+      "",
+    ].join("\n");
+
+    const parsed = parseUnifiedDiff(modeOnly);
+    expect(parsed.stats.files).toBe(1);
+    expect(parsed.files[0]).toMatchObject({
+      path: "tools/run.sh",
+      changeType: "modified",
+      additions: 0,
+      deletions: 0,
+    });
+    expect(parsed.files[0].hunks).toHaveLength(0);
+
+    const copy = [
+      "diff --git a/src/a.ts b/src/b.ts",
+      "similarity index 100%",
+      "copy from src/a.ts",
+      "copy to src/b.ts",
+      "",
+    ].join("\n");
+
+    expect(() => parseUnifiedDiff(copy)).not.toThrow();
+  });
+
+  it("still rejects a stray backslash line that is not the marker", () => {
+    const diff = [
+      "diff --git a/src/a.ts b/src/a.ts",
+      "--- a/src/a.ts",
+      "+++ b/src/a.ts",
+      "@@ -1,1 +1,1 @@",
+      " const a = 1;",
+      "\\ Not the no-newline marker",
+      "",
+    ].join("\n");
+
+    expect(captureError(() => parseUnifiedDiff(diff)).code).toBe("MALFORMED_DIFF");
   });
 });

@@ -55,6 +55,14 @@ export class DiffParseError extends Error {
 
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)$/;
 
+/**
+ * Git appends this marker after the final line of a file that has no trailing
+ * newline. It can follow the last counted line of a hunk, at which point the
+ * hunk body loop has already stopped, so it must also be accepted at the hunk
+ * boundary.
+ */
+const NO_NEWLINE_MARKER = "\\ No newline at end of file";
+
 function byteLength(value: string): number {
   return new TextEncoder().encode(value).length;
 }
@@ -433,7 +441,7 @@ export function parseUnifiedDiff(rawInput: string): ParsedDiff {
         }
 
         const body = lines[index];
-        if (body.startsWith("\\")) {
+        if (body === NO_NEWLINE_MARKER) {
           hunk.noNewlineAtEof = true;
           index += 1;
           continue;
@@ -524,6 +532,14 @@ export function parseUnifiedDiff(rawInput: string): ParsedDiff {
         index += 1;
       }
 
+      // A file without a trailing newline puts its marker after the final
+      // counted hunk line, so consume it at the hunk boundary. Consuming it
+      // here keeps multi-file diffs moving to the next `diff --git` section.
+      while (index < lines.length && lines[index] === NO_NEWLINE_MARKER) {
+        hunk.noNewlineAtEof = true;
+        index += 1;
+      }
+
       accumulator.hunks.push(hunk);
       continue;
     }
@@ -533,8 +549,17 @@ export function parseUnifiedDiff(rawInput: string): ParsedDiff {
     else if (line.startsWith("deleted file mode")) accumulator.isDeletedFile = true;
     else if (line.startsWith("rename from ")) accumulator.renameFrom = line.slice("rename from ".length).trim();
     else if (line.startsWith("rename to ")) accumulator.renameTo = line.slice("rename to ".length).trim();
-    else if (line.startsWith("index ") || line.startsWith("similarity index ")) {
-      // Metadata only, no effect on the analysis.
+    else if (
+      line.startsWith("index ") ||
+      line.startsWith("similarity index ") ||
+      line.startsWith("dissimilarity index ") ||
+      line.startsWith("old mode ") ||
+      line.startsWith("new mode ") ||
+      line.startsWith("copy from ") ||
+      line.startsWith("copy to ")
+    ) {
+      // Metadata only, no effect on the analysis. Mode-only and copy entries
+      // legitimately have no hunks.
     } else if (line.trim().length > 0) {
       throw new DiffParseError(
         "MALFORMED_DIFF",

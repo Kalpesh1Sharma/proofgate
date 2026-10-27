@@ -1,0 +1,92 @@
+# ProofGate deterministic diff review for pull requests.
+#
+# Trust model
+# -----------
+# This workflow analyses a diff as data. It checks out the *base* revision and
+# installs and runs ProofGate from that trusted revision. The pull request head
+# is fetched as a Git ref and only passed to `git diff`; it is never checked out
+# and never executed.
+#
+# - Uses `pull_request` (never `pull_request_target`), so the token is read-only
+#   and repository secrets are not available to the workflow.
+# - Permissions are limited to `contents: read`.
+# - No test, build or install command from the pull request is executed.
+# - The workflow does not approve, merge, label or otherwise clear the PR.
+#
+# Note: workflows on `pull_request` are taken from the PR's merge ref. Protect
+# this file with CODEOWNERS and require approval for outside contributors.
+# Bootstrapping: the `ci:analyze` script must already exist on the base branch,
+# so merge this workflow before expecting it to run on subsequent PRs.
+
+name: ProofGate diff review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proofgate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  diff-review:
+    name: Deterministic diff review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out trusted base revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+
+      - name: Fetch PR head as data only
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch --no-tags --depth=1 origin "pull/${PR_NUMBER}/head:refs/remotes/proofgate/pr-head"
+
+      - name: Use Node.js 22.14.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+
+      - name: Install trusted base dependencies
+        run: npm ci
+
+      - name: Generate unified diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          HEAD_SHA="$(git rev-parse refs/remotes/proofgate/pr-head)"
+          git diff \
+            --no-color \
+            --no-ext-diff \
+            --no-textconv \
+            --unified=3 \
+            "$BASE_SHA" "$HEAD_SHA" > "$RUNNER_TEMP/proofgate.diff"
+          echo "PROOFGATE_HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
+          wc -c "$RUNNER_TEMP/proofgate.diff"
+
+      - name: Analyse diff and write reports
+        run: |
+          npm run ci:analyze -- \
+            --diff "$RUNNER_TEMP/proofgate.diff" \
+            --out-dir proofgate-report \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "$PROOFGATE_HEAD_SHA" \
+            --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proofgate-reports
+          path: proofgate-report/
+          if-no-files-found: warn
+          retention-days: 14

@@ -254,7 +254,7 @@ describe("analyzeDiff", () => {
     expect(result.parsed.files).toHaveLength(3);
     expect(result.tool).toEqual({
       name: "ProofGate",
-      version: "0.4.0",
+      version: "0.5.0",
       engine: "deterministic-heuristics-v1",
     });
     expect(result.generatedAt).toBe(FIXED_TIME);
@@ -290,6 +290,23 @@ describe("analyzeDiff", () => {
     const first = analyze(LOAN_ELIGIBILITY_EXAMPLE_DIFF);
     const second = analyze(LOAN_ELIGIBILITY_EXAMPLE_DIFF);
     expect(second).toEqual(first);
+  });
+
+  it("keeps the bundled loan example at exactly 10 findings (7 high, 3 low)", () => {
+    const result = analyze(LOAN_ELIGIBILITY_EXAMPLE_DIFF);
+
+    expect(result.parsed.stats).toEqual({
+      files: 3,
+      hunks: 3,
+      additions: 5,
+      deletions: 21,
+    });
+    expect(result.summary.total).toBe(10);
+    expect(result.summary.countsBySeverity).toEqual({
+      high: 7,
+      medium: 0,
+      low: 3,
+    });
   });
 
   it("reports zero findings without claiming the change is safe", () => {
