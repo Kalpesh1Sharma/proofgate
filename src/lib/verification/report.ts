@@ -18,7 +18,7 @@ import type {
 } from "./types";
 
 export const VERIFICATION_SCHEMA_VERSION = "2.0";
-export const TOOL_VERSION = "0.2.0";
+export const TOOL_VERSION = "0.3.0";
 
 export const VERIFICATION_LIMITATIONS: string[] = [
   "Only the allowlisted npm scripts for the selected tasks were executed.",

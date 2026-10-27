@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "2.0",
+  "tool": {
+    "name": "ProofGate",
+    "version": "0.2.0",
+    "mode": "trusted-local-cli"
+  },
+  "generatedAt": "2026-10-27T00:28:21.426Z",
+  "repository": {
+    "root": "<demo-workspace>/shop",
+    "ref": "HEAD",
+    "commit": "c02a7ec9af15c8280e7648d9d673cff9697530f5"
+  },
+  "approval": {
+    "grantedAt": "2026-10-27T00:28:21.426Z",
+    "method": "cli-flag",
+    "approvedCommands": [
+      "node <npm-cli.js> run test"
+    ]
+  },
+  "environment": {
+    "platform": "win32",
+    "nodeVersion": "v24.21.0"
+  },
+  "verified": {
+    "runs": [
+      {
+        "taskId": "test",
+        "label": "Unit tests",
+        "command": {
+          "executable": "node",
+          "args": [
+            "<npm-cli.js>",
+            "run",
+            "test"
+          ]
+        },
+        "startedAt": "2026-10-27T00:28:21.044Z",
+        "finishedAt": "2026-10-27T00:28:21.425Z",
+        "durationMs": 381,
+        "exitCode": 0,
+        "signal": null,
+        "status": "passed",
+        "timedOut": false,
+        "truncated": false,
+        "stdout": "\n> proofgate-phase2-demo@1.0.0 test\n> node --test tests/discount.test.js\n\n✔ rejects a negative total (0.9727ms)\n✔ never discounts more than MAX_DISCOUNT (0.2306ms)\n✔ applies a rate below the cap unchanged (0.1149ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 80.1061\n",
+        "stderr": "",
+        "spawnError": null
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "timedOut": 0,
+      "spawnErrors": 0
+    }
+  },
+  "heuristic": {
+    "status": "not-requested",
+    "note": "No diff was attached, so no heuristic code-risk findings were produced for this report."
+  },
+  "skippedChecks": [],
+  "limitations": [
+    "Only the allowlisted npm scripts for the selected tasks were executed.",
+    "A passing command means that command exited with code 0 on this machine at this commit. It is not a proof that the change is correct or safe.",
+    "Commands run against the working tree, so uncommitted changes are executed as they are on disk; the report records the commit the reference resolved to, not a working-tree snapshot.",
+    "A failing command is reproducible evidence of a failure, not an explanation of its cause.",
+    "Commands run with the developer's own permissions on a trusted local checkout. This CLI is not a sandbox: project scripts can execute arbitrary code, read files and reach the network.",
+    "A timeout means the command did not finish within its limit; it is reported separately from a failure and the process may have left child processes behind.",
+    "Output is truncated at a fixed byte limit; the omitted tail is not analysed.",
+    "No uploaded diff was executed. If a diff was attached, it was only parsed for Phase 1 heuristic patterns.",
+    "Heuristic findings are pattern matches, not verified defects, and the absence of findings is not evidence of safety."
+  ]
+}

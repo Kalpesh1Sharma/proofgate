@@ -16,18 +16,21 @@ import {
   LogoMark,
   ReportIcon,
   ReviewIcon,
+  ShieldCheckIcon,
 } from "./icons";
+import { EvidenceView } from "./evidence/evidence-view";
 import { MethodView } from "./method-view";
 import { ReportView } from "./report-view";
 import { Callout, EmptyState, HeuristicBadge, SectionHeading } from "./ui";
 
-type View = "review" | "findings" | "report" | "method";
+type View = "review" | "findings" | "evidence" | "report" | "method";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
 const NAV: { id: View; label: string; icon: IconComponent }[] = [
   { id: "review", label: "Review", icon: ReviewIcon },
   { id: "findings", label: "Findings", icon: FindingsIcon },
+  { id: "evidence", label: "Evidence", icon: ShieldCheckIcon },
   { id: "report", label: "Report", icon: ReportIcon },
   { id: "method", label: "Method & limits", icon: BookIcon },
 ];
@@ -56,6 +59,12 @@ const VIEW_COPY: Record<View, { eyebrow: string; title: string; description: str
     title: "Method, rules and limits",
     description:
       "What the engine actually does in Phase 1, which rules run, and the explicit boundaries of what this tool can tell you.",
+  },
+  evidence: {
+    eyebrow: "Phase 2 · Evidence center",
+    title: "Verified command evidence",
+    description:
+      "Import JSON reports written by the local verification CLI to inspect real command outcomes, and compare a before/after pair. Imported files are untrusted data: they are validated and displayed, never executed.",
   },
 };
 
@@ -436,6 +445,8 @@ export function Workspace({ exampleDiff }: { exampleDiff: string }) {
                   />
                 )
               ) : null}
+
+              {view === "evidence" ? <EvidenceView /> : null}
 
               {view === "method" ? <MethodView /> : null}
             </div>

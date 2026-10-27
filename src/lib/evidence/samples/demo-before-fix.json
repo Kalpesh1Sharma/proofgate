@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "2.0",
+  "tool": {
+    "name": "ProofGate",
+    "version": "0.2.0",
+    "mode": "trusted-local-cli"
+  },
+  "generatedAt": "2026-10-27T00:28:20.546Z",
+  "repository": {
+    "root": "<demo-workspace>/shop",
+    "ref": "HEAD",
+    "commit": "38754285f7d33a77fa589b8796561c428b991454"
+  },
+  "approval": {
+    "grantedAt": "2026-10-27T00:28:20.546Z",
+    "method": "cli-flag",
+    "approvedCommands": [
+      "node <npm-cli.js> run test"
+    ]
+  },
+  "environment": {
+    "platform": "win32",
+    "nodeVersion": "v24.21.0"
+  },
+  "verified": {
+    "runs": [
+      {
+        "taskId": "test",
+        "label": "Unit tests",
+        "command": {
+          "executable": "node",
+          "args": [
+            "<npm-cli.js>",
+            "run",
+            "test"
+          ]
+        },
+        "startedAt": "2026-10-27T00:28:20.034Z",
+        "finishedAt": "2026-10-27T00:28:20.545Z",
+        "durationMs": 511,
+        "exitCode": 1,
+        "signal": null,
+        "status": "failed",
+        "timedOut": false,
+        "truncated": false,
+        "stdout": "\n> proofgate-phase2-demo@1.0.0 test\n> node --test tests/discount.test.js\n\n✔ rejects a negative total (1.463ms)\n✖ never discounts more than MAX_DISCOUNT (1.231ms)\n✔ applies a rate below the cap unchanged (0.1252ms)\nℹ tests 3\nℹ suites 0\nℹ pass 2\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 95.9937\n\n✖ failing tests:\n\ntest at tests\\discount.test.js:12:1\n✖ never discounts more than MAX_DISCOUNT (1.231ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  10 !== 70\n  \n      at TestContext.<anonymous> (<demo-workspace>/shop\\tests\\discount.test.js:14:10)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1402:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)\n      at Test.postRun (node:internal/test_runner/test:1542:19)\n      at Test.run (node:internal/test_runner/test:1467:12)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 10,\n    expected: 70,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n",
+        "stderr": "",
+        "spawnError": null
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "timedOut": 0,
+      "spawnErrors": 0
+    }
+  },
+  "heuristic": {
+    "status": "not-requested",
+    "note": "No diff was attached, so no heuristic code-risk findings were produced for this report."
+  },
+  "skippedChecks": [],
+  "limitations": [
+    "Only the allowlisted npm scripts for the selected tasks were executed.",
+    "A passing command means that command exited with code 0 on this machine at this commit. It is not a proof that the change is correct or safe.",
+    "Commands run against the working tree, so uncommitted changes are executed as they are on disk; the report records the commit the reference resolved to, not a working-tree snapshot.",
+    "A failing command is reproducible evidence of a failure, not an explanation of its cause.",
+    "Commands run with the developer's own permissions on a trusted local checkout. This CLI is not a sandbox: project scripts can execute arbitrary code, read files and reach the network.",
+    "A timeout means the command did not finish within its limit; it is reported separately from a failure and the process may have left child processes behind.",
+    "Output is truncated at a fixed byte limit; the omitted tail is not analysed.",
+    "No uploaded diff was executed. If a diff was attached, it was only parsed for Phase 1 heuristic patterns.",
+    "Heuristic findings are pattern matches, not verified defects, and the absence of findings is not evidence of safety."
+  ]
+}

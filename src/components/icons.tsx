@@ -159,3 +159,59 @@ export function TrashIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function UploadIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M12 20.5v-11" />
+      <path d="m7.5 14 4.5-4.5 4.5 4.5" />
+      <path d="M4.5 7.5v-2a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
+export function ShieldCheckIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M12 2.75 19 5.6v5.7c0 4.35-2.86 7.75-7 9.2-4.14-1.45-7-4.85-7-9.2V5.6L12 2.75Z" />
+      <path d="m9 11.75 2.1 2.1L15 10.25" />
+    </svg>
+  );
+}
+
+export function ClockIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M12 7.5V12l3 1.75" />
+    </svg>
+  );
+}
+
+export function XCircleIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="m9.5 9.5 5 5M14.5 9.5l-5 5" />
+    </svg>
+  );
+}
+
+export function MinusCircleIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M8.75 12h6.5" />
+    </svg>
+  );
+}
+
+export function DatabaseIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <ellipse cx="12" cy="6" rx="7.25" ry="2.75" />
+      <path d="M4.75 6v12c0 1.52 3.25 2.75 7.25 2.75s7.25-1.23 7.25-2.75V6" />
+      <path d="M4.75 12c0 1.52 3.25 2.75 7.25 2.75s7.25-1.23 7.25-2.75" />
+    </svg>
+  );
+}

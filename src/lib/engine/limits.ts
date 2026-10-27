@@ -4,7 +4,7 @@
  */
 
 export const TOOL_NAME = "ProofGate";
-export const TOOL_VERSION = "0.2.0";
+export const TOOL_VERSION = "0.3.0";
 export const ENGINE_ID = "deterministic-heuristics-v1";
 
 /**

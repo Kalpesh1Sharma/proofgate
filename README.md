@@ -24,6 +24,15 @@ It never executes the code in a diff and never sends your source to an external 
   `passed`, `failed`, `timed-out` and `spawn-error`.
 - Writes a JSON report that keeps verified command outcomes and heuristic diff findings in separate sections.
 
+**v0.3 · Verification Evidence Center (dashboard)**
+
+- A **Evidence** tab that imports those JSON reports from local files, read-only.
+- Strict, size-limited runtime validation: unsupported schemas, tampered summaries, impossible exit codes and unknown fields are rejected with a path and a hint.
+- Shows command status (PASSED / FAILED / TIMED OUT / NOT RUN), exit codes, timestamps, durations, commit, bounded stdout/stderr and recorded limitations.
+- Compares a before/after pair task by task and shows the failure-to-pass transition with both commit SHAs.
+- Keeps heuristic diff findings visually separate from verified command outcomes.
+- Ships a bundled **DEMO DATA** pair generated from the real Phase 2 demo.
+
 ## Requirements
 
 - Node.js 20.9+ (Next.js 16 requirement; developed on Node 24)
@@ -97,6 +106,62 @@ npm run verify -- --repo . --task lint --approve --out proofgate-lint-report.jso
 
 To include heuristic findings in the same report, export a diff first and pass `--diff`.
 
+## Evidence Center walkthrough
+
+This is the reproducible path from a local run to the dashboard. It needs no network access.
+
+1. Generate a real before/after pair:
+
+   ```bash
+   npm run verify:demo -- --keep
+   ```
+
+   The demo prints a workspace path and writes two reports to it:
+
+   ```
+   <workspace>\report-before-fix.json    # PASSED? no — the fixture test really fails
+   <workspace>\report-after-fix.json     # the same command really passes after the fix
+   ```
+
+   Both files are genuine CLI output. Nothing about them is simulated.
+
+2. Start the dashboard and open the **Evidence** tab:
+
+   ```bash
+   npm run dev
+   ```
+
+3. Import the pair. Either:
+
+   - click **Load demo pair** to use the bundled **DEMO DATA** copy of exactly these two runs, or
+   - click **Choose JSON file** in the *Before* slot and select `report-before-fix.json`, then do the same in the *After* slot with `report-after-fix.json`.
+
+4. Read the result:
+
+   - the **Before → after comparison** table shows `test` moving from `FAILED` (exit 1) to `PASSED` (exit 0), with both commit SHAs and duration delta;
+   - each report panel lists the real command, exit code, timestamps, duration and captured output;
+   - heuristic diff findings appear in a separate amber section labelled HEURISTIC, next to the note that a passing command does not confirm or clear them;
+   - the limits recorded by the CLI are shown verbatim.
+
+5. Optional: import only one report to inspect a single run. The comparison appears once both slots hold a report.
+
+### Bundled DEMO DATA
+
+`src/lib/evidence/samples/demo-before-fix.json` and `demo-after-fix.json` are the real output of the demo, copied in by:
+
+```bash
+node scripts/emit-evidence-samples.mjs --from <kept-demo-workspace>
+```
+
+Publication redaction replaces machine-specific absolute paths (`<demo-workspace>/shop`, `node`, `<npm-cli.js>`) only. Statuses, exit codes, timestamps, durations, commit SHAs, output and limitations are unmodified. The bundled files record the CLI version that produced them (0.2.0); they are kept as evidence and are not rewritten on later releases. The UI always marks these files **Demo data** and states that they are not a live run.
+
+### Evidence Center security
+
+- Imports are parsed in the browser against a strict schema with a 2 MB cap; unsupported versions, unknown fields, tampered summaries and contradictory statuses are rejected with a message.
+- Nothing in a report is executed, resolved or fetched. A path inside a report is displayed as text, never opened.
+- The tab has no command input, no repository path input and no network calls.
+- Public deployments still cannot run repository code: the CLI is local-only and there is no server route that executes it.
+
 ## Trust boundary and security
 
 ProofGate draws a hard line between *parsing* and *executing*:
@@ -125,6 +190,7 @@ src/
 │  ├─ page.tsx                 dashboard entry
 │  └─ api/analyze/route.ts     POST diff → analysis JSON (no execution)
 ├─ components/                 dashboard, findings, report, method views
+│  └─ evidence/                Evidence Center (import, compare, render)
 ├─ cli/verify.ts               Phase 2 CLI (approval, orchestration, output)
 └─ lib/
    ├─ engine/                  pure Phase 1 engine
@@ -139,12 +205,19 @@ src/
    │  ├─ repository.ts         path, Git and ref validation
    │  ├─ runner.ts             spawn(shell:false) + timeout + output caps
    │  └─ report.ts             verified vs heuristic JSON evidence report
+   ├─ evidence/                Evidence Center parsing and interpretation
+   │  ├─ types.ts              view model + limits
+   │  ├─ schema.ts             strict runtime validation of imported reports
+   │  ├─ compare.ts            status interpretation + before/after comparison
+   │  ├─ samples.ts            bundled DEMO DATA pair + provenance
+   │  └─ samples/              the real demo JSON reports
    ├─ reports/build-report.ts  Markdown / JSON Phase 1 reports
    ├─ adapters/                Phase 2/3 seams (unimplemented, disabled)
    └─ examples/                bundled demo diff
 examples/phase2-fix/           before/after fixture repository
 scripts/phase2-demo.mjs        before/after demo driver
-tests/                         parsing, rules, reports, verification
+scripts/emit-evidence-samples.mjs  redacts and bundles the demo pair
+tests/                         parsing, rules, reports, verification, evidence
 ```
 
 ### Verification rules (Phase 1)

@@ -132,7 +132,7 @@ export function Callout({
   title,
   children,
 }: {
-  tone?: "neutral" | "warning" | "info";
+  tone?: "neutral" | "warning" | "info" | "success" | "danger";
   title?: string;
   children: ReactNode;
 }) {
@@ -140,6 +140,8 @@ export function Callout({
     neutral: "border-line bg-elevated/60 text-muted",
     warning: "border-amber-300/25 bg-amber-300/[0.05] text-amber-100/90",
     info: "border-sky-300/20 bg-sky-300/[0.05] text-sky-100/90",
+    success: "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-100/90",
+    danger: "border-rose-400/30 bg-rose-500/[0.07] text-rose-100/90",
   } as const;
 
   return (
